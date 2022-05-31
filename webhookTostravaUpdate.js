@@ -18,35 +18,42 @@ process.on("message", async function (message) {
 function insertActivitiesIntoStravaTable(athelete,user, json) {
   
 
-    let sql = 'SELECT uuid from strava where uuid = ?';
-    let params = [athelete.uuid.id]; 
+    let sql = 'SELECT * from strava where activity_id = ?';
+    let params = [user.object_id];
 
     db.all(sql, params, (err, rows) => {
-        if (err) {
-          return console.error(err.message);
-        }
+      if (err) {
+        console.log("Error Occured while webhookToStravaUpdate CHECK insertActivitiesIntoStravaTable -DB for uuid",athelete.uuid)
+        console.error(err.message);
+        return res.status(500).send("Error Occured while webhookToStravaUpdate CHECK insertActivitiesIntoStravaTable -DB for uuid",athelete.uuid)
+      }
         
         if(rows.length == 0)
         {
-            sql = 'INSERT INTO strava (uuid,athlete_id, activity_id, activity_name average_speed, distance, elapsed_time, max_speed, moving_time, start_date_local, start_date_local_epoch, total_elevation_gain) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)';
+            sql = 'INSERT OR REPLACE INTO strava (uuid,athlete_id, activity_id, activity_name, average_speed, distance, elapsed_time, max_speed, moving_time, start_date_local, start_date_local_epoch, total_elevation_gain) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)';
             params = [athelete.uuid,user.owner_id, user.object_id, json.activity_name, json.average_speed, json.distance, json.elapsed_time, json.max_speed, json.moving_time, json.start_date_local, json.start_date_local_epoch, json.total_elevation_gain];
             db.run(sql, params, err => {
-                if (err)
-                    return console.error(err.message);
+              if (err) {
+                console.log("Error Occured while webhookToStravaUpdate Inserted insertActivitiesIntoStravaTable -DB for uuid",athelete.uuid)
+                console.error(err.message);
+                return res.status(500).send("Error Occured while webhookToStravaUpdate Inserted insertActivitiesIntoStravaTable -DB for uuid",athelete.uuid)
+              }
                 
-                console.log("Date Entry Done!!");
+              console.log("WebhookToStravaUpdate INSERT DONE for uuid",athelete.uuid);
         })
         }
         else
         {
             sql = 'UPDATE strava SET activity_name = ? where activity_id = ?'
-            //sql = 'INSERT INTO strava (uuid,athlete_id, activity_id, activity_name average_speed, distance, elapsed_time, max_speed, moving_time, start_date_local, start_date_local_epoch, total_elevation_gain) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)';
             params = [json.activity_name, user.object_id];
             db.run(sql, params, err => {
-                if (err)
-                    return console.error(err.message);
+              if (err) {
+                console.log("Error Occured while webhookToStravaUpdate Update insertActivitiesIntoStravaTable -DB for uuid",athelete.uuid)
+                console.error(err.message);
+                return res.status(500).send("Error Occured while webhookToStravaUpdate Update insertActivitiesIntoStravaTable -DB for uuid",athelete.uuid)
+              }
                 
-                console.log("Date Entry Updated!!");
+              console.log("WebhookToStravaUpdate Update DONE for uuid",athelete.uuid);
             })
         }
     })
@@ -80,10 +87,6 @@ async function stravaApiCall(athelete,user,access_token,callback_insertActivitie
                 timezone: json.timezone,
             }
         }
-        else
-        {
-          // console.log("NO JSON");
-        }
   
   if (Object.keys(json1).length !== 0)
     callback_insertActivitiesIntoStravaTable(athelete,user,json1);
@@ -110,19 +113,15 @@ async function getAccessToken(athelete,user,refresh_token,callback_stravaApiCall
 
    const reAuthResJson = await reAuthorizeResponse.json();
 
-  // console.log("Access Token => - getAccessToken -  " + reAuthResJson.access_token);
-  // console.log("Refresh Token =>  " + reAuthResJson.refresh_token);
-  // console.log("Access Token Expiration =>  " + reAuthResJson.expires_at);
-  // console.log("Access Token Expiration =>  " + reAuthResJson.expires_in);
-  // console.log("Response JSON => - getAccessToken -  \n");
-  // console.log(reAuthResJson);
 
   let sql = 'UPDATE users SET access_token = ?, access_token_expiration = ? WHERE athlete_id = ? ';
   let params = [reAuthResJson.access_token, reAuthResJson.expires_at, user.owner_id];
 
   db.all(sql, params, (err, rows) => {
     if (err) {
-      return console.error(err.message);
+      console.log("Error Occured while wehbookToStravaUpdate getAccessToken -DB for uuid",athelete.uuid)
+      console.error(err.message);
+      return res.status(500).send("Error Occured while wehbookToStravaUpdate getAccessToken -DB for uuid",athelete.uuid)
     }
 
   callback_stravaApiCall(athelete,user ,reAuthResJson.access_token, insertActivitiesIntoStravaTable);
@@ -136,7 +135,9 @@ function getRefreshToken(user, callback_getAccessToken, callback_stravaApiCall) 
   
   db.all(sql, params, (err, rows) => {
     if (err) {
-      return console.error(err.message);
+      console.log("Error Occured while webhookToStravaUpdate getRefreshToken -DB for where athleteId ",user.owner_id);
+      console.error(err.message);
+      return res.status(500).send("Error Occured while webhookToStravaUpdate getRefreshToken -DB for where athleteId ",user.owner_id);
     }
     
     var athelete = rows[0];
@@ -147,12 +148,10 @@ function getRefreshToken(user, callback_getAccessToken, callback_stravaApiCall) 
     
     if(expDate < dateNow || rows[0].access_token==null || rows[0].access_token_expiration==null)
     {
-      // console.log("DON'THave Token")
       callback_getAccessToken(athelete,user,rows[0].refresh_token,stravaApiCall);
     }
     else
     {
-      // console.log("Have Token")
       callback_stravaApiCall(athelete,user ,rows[0].access_token, insertActivitiesIntoStravaTable);
     }
   })
@@ -165,18 +164,16 @@ var params = [user.owner_id];
 
 db.all(sql, params, (err, rows) => {
   if (err) {
-    return console.error(err.message);
+    console.log("Error Occured while webhookToStravaUpdate -db where athleteId ",user.owner_id);
+    console.error(err.message);
+    return res.status(500).send("Error Occured while webhookToStravaUpdate -db where athleteId ",user.owner_id);
   }
 
   if(rows.length != 0)
   {
-    // console.log("PASSED EVENT CHECK")
     getRefreshToken(user,getAccessToken,stravaApiCall)
   }
-  else
-  {
-    // console.log("Failed EVENT CHECK")
-  }
+  
 })
 }
 

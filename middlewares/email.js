@@ -5,9 +5,6 @@ const sendEmail = async (email, token) => {
     var email = email;
     var token = token;
 
-    // console.log(email)
-    // console.log(token)
-
     try {
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
@@ -26,9 +23,10 @@ const sendEmail = async (email, token) => {
             subject: `Reset Password Link Of Cycology`,
             html: `<p>You requested for reset password, kindly use this <a href="http://qa.cyclologyindia.com/update-password?token=${token}">link</a> to reset your password</p></br>DON't SHARE IT WITH ANYONE!`
         });
-        console.log("email sent sucessfully");
+
+        console.log("Password Reset MAIL SEND to email",email);
     } catch (error) {
-        console.log("email not sent");
+        console.log("Password Reset MAIL NOT SEND to email",email);
         console.log(error);
     }
 };

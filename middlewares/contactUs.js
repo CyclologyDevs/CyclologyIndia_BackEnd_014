@@ -26,9 +26,9 @@ const sendEmail = async (name, email, message) => {
           Name: ${name} <hr/>
           Message: ${message} <hr/>`,
         });
-        console.log("email sent sucessfully");
+        console.log("Email Send for  ContactUs",email);
     } catch (error) {
-        console.log("email not sent");
+        console.log("ERROR! Email NOT Send for  ContactUs",email);
         console.log(error);
     }
 };
@@ -39,9 +39,11 @@ const sendEmail = async (name, email, message) => {
 
     try {
       await sendEmail(name, email, message);
-      res.status(200).send("Message Successfully Sent!");
+      console.log("ContactUs Message SEND for email",email)
+      return res.status(200).send("Message Successfully Sent!");
     } catch (error) {
-      res.status(400).send("Message Could not be Sent");
+      console.log("ContactUs Message NOT SEND for email",email)
+      return res.status(400).send("Message Could not be Sent");
     }
   };
 

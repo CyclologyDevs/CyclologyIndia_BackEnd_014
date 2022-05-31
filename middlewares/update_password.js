@@ -14,9 +14,13 @@ const update_password = async (req, res, next) => {
         [data.password, req.body.token],
         function (err, result) {
             if (err) {
-                res.status(400).json({ "error": res.message })
-                return;
-            }
+                console.log("Error Occured while Password Reset where token is ",req.body.token)
+                console.error(err.message);
+                return res.status(500).send("Error Occured while Password Reset where token is ",req.body.token)
+              }
+
+            console.log("Password Reset Done where token is ",req.body.token)
+
             res.status(200).json({
                 message: "success",
                 data: data,

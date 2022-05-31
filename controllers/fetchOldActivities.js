@@ -6,7 +6,7 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 // Listening for Parent Request and Sending Response
 process.on("message", async function (message) {
     var user = JSON.parse(message);
-    //console.log(user);
+    console.log("In Fetch old Activites for uuid",user.uuid," event",user.event_name);
     await start(user);
     // process.send("CHILD -> Total Athlete Date Inserted into Strava Table!!");
     //process.exit();
@@ -41,24 +41,29 @@ function changeDatetimeToDate(json1)
     }
 }
 
-
   function insertActivitiesIntoStravaTable(athelete,user, json) {
+    console.log("In insertActivitiesIntoStravaTable for uuid",user.uuid," event",user.event_name)
 
-    const sql = 'INSERT INTO strava (uuid,athlete_id, activity_id, activity_name, average_speed, distance, elapsed_time, max_speed, moving_time, start_date_local, start_date_local_epoch, total_elevation_gain) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)';
+    const sql = 'INSERT OR REPLACE INTO strava (uuid,athlete_id, activity_id, activity_name, average_speed, distance, elapsed_time, max_speed, moving_time, start_date_local, start_date_local_epoch, total_elevation_gain) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)';
     let params;
 
     json.forEach( (json) => {
         params = [user.uuid, user.athlete_id, json.id, json.activity_name, json.average_speed, json.distance, json.elapsed_time, json.max_speed, json.moving_time, json.start_date_local, json.start_date_local_epoch, json.total_elevation_gain];
     
         db.run(sql, params, err => {
-            if (err)
-              return console.error(err.message);
+          if (err) {
+            console.log("Error Occured while fetch old activities insertActivitiesIntoStravaTable -DB for uuid",user.uuid," event",user.event_name)
+            console.error(err.message);
+            return res.status(500).send("Error Occured while fetch old activities insertActivitiesIntoStravaTable -DB for uuid",user.uuid," event",user.event_name)
+          }
         })
     })
-    console.log("Done Dona Done!!!");
+
+    console.log("Old Activites DONE for uuid",user.uuid," event",user.event_name);
   }
   
   async function stravaApiCall(athelete,user,access_token,callback_insertActivitiesIntoStravaTable) {
+    console.log("In stravaApiCall for uuid",user.uuid," event",user.event_name)
 
     let tdate = Date.now();
     let fdate = user.event_start_date;
@@ -95,6 +100,7 @@ function changeDatetimeToDate(json1)
   }
   
   async function getAccessToken(athelete,user,refresh_token,callback_stravaApiCall) {
+    console.log("In getAccessTokenfor uuid",user.uuid," event",user.event_name)
     const headers = {
       'Accept' : 'application/json, text/plain, */*',
       'Content-Type' : 'application/json'
@@ -115,33 +121,31 @@ function changeDatetimeToDate(json1)
   
      const reAuthResJson = await reAuthorizeResponse.json();
   
-    // console.log("Access Token => - getAccessToken -  " + reAuthResJson.access_token);
-    // console.log("Refresh Token =>  " + reAuthResJson.refresh_token);
-    // console.log("Access Token Expiration =>  " + reAuthResJson.expires_at);
-    // console.log("Access Token Expiration =>  " + reAuthResJson.expires_in);
-    // console.log("Response JSON => - getAccessToken -  \n");
-    // console.log(reAuthResJson);
   
     let sql = 'UPDATE users SET access_token = ?, access_token_expiration = ? WHERE athlete_id = ? ';
     let params = [reAuthResJson.access_token, reAuthResJson.expires_at, user.owner_id];
   
     db.all(sql, params, (err, rows) => {
       if (err) {
-        return console.error(err.message);
+        console.log("Error Occured while fetch old activities getAccessToken -DB for uuid",user.uuid," event",user.event_name)
+        console.error(err.message);
+        return res.status(500).send("Error Occured while fetch old activities getAccessToken -DB for for uuid",user.uuid," event",user.event_name)
       }
   
     callback_stravaApiCall(athelete,user ,reAuthResJson.access_token, insertActivitiesIntoStravaTable);
-  }
-    )
+  })
   }
   
   function getRefreshToken(user, callback_getAccessToken, callback_stravaApiCall) {
+    console.log("In getRefreshToken for uuid",user.uuid," event",user.event_name)
     const sql = `SELECT * FROM users WHERE athlete_id = ?`;
     let params = [user.athlete_id];
     
     db.all(sql, params, (err, rows) => {
       if (err) {
-        return console.error(err.message);
+        console.log("Error Occured while fetch old activities getRefreshToken -DB for uuid",user.uuid," event",user.event_name)
+        console.error(err.message);
+        return res.status(500).send("Error Occured while fetch old activities getRefreshToken -DB for uuid",user.uuid," event",user.event_name)
       }
       
       var athelete = rows[0];
@@ -152,12 +156,10 @@ function changeDatetimeToDate(json1)
       
       if(expDate < dateNow || rows[0].access_token==null || rows[0].access_token_expiration==null)
       {
-        // console.log("DON'THave Token")
         callback_getAccessToken(athelete,user,rows[0].refresh_token,stravaApiCall);
       }
       else
       {
-        // console.log("Have Token")
         callback_stravaApiCall(athelete,user ,rows[0].access_token, insertActivitiesIntoStravaTable);
       }
     })
@@ -165,32 +167,24 @@ function changeDatetimeToDate(json1)
 
   async function start(user)
 {
-      let event_start_date = Date();
+  console.log("In start for uuid",user.uuid," event",user.event_name);
       let dateNow = Date(user.event_start_date);
       
       var sql = 'SELECT athlete_id from event WHERE athlete_id = ?;'
       var params = [user.athlete_id];
         
       db.all(sql, params, (err, rows) => {
-        if (err)
-          return console.error(err.message);
+        if (err) {
+          console.log("Error Occured while fetch old activities start -DB for uuid",user.uuid," event",user.event_name)
+          console.error(err.message);
+          return res.status(500).send("Error Occured while fetch old activities start -DB for uuid",user.uuid," event",user.event_name)
+        }
         
-          //console.log(rows);
-        
-        if(rows.length == 1)
-        {
-          //console.log("PASSED EVENT CHECK")
-          //console.log(user.event_start_date , dateNow, event_start_date)
-          //console.log(user.event_start_date > dateNow)
-          //console.log(user.event_start_date < dateNow)
+        //if(rows.length == 1)
+        //{
           if(user.event_start_date < dateNow ) {
-            //console.log("Yes YES!");
             getRefreshToken(user, getAccessToken, stravaApiCall);
           }
-        }
-        else
-        {
-          //console.log("Failed EVENT CHECK")
-        }
+        //}
       })
 }
